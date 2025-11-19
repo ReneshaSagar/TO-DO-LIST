@@ -1,0 +1,411 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Pretty Tasks — Todo</title>
+  <style>
+    :root{
+      --bg: #0b0611;
+      --card: rgba(20,10,35,0.82);
+      --glass: rgba(40,16,55,0.45);
+      --accent-1:#c657ff;
+      --accent-2:#5b1d8a;
+      --pink:#ffb7df;
+      --muted:#c7a6e5;
+      --radius:18px;
+      --glow: 0 0 40px rgba(198,87,255,0.25);
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%;margin:0;padding:0;background:var(--bg);-webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale;}
+    body{display:flex;align-items:center;justify-content:center;padding:40px;}
+
+    /* Aurora Background */
+    .aurora{
+      position:fixed;inset:0;z-index:-2;pointer-events:none;
+      background:
+        radial-gradient(1400px 900px at 10% 80%, rgba(135,70,255,0.44), transparent),
+        radial-gradient(1600px 1100px at 90% 20%, rgba(200,70,255,0.40), transparent),
+        radial-gradient(1800px 1300px at 50% 50%, rgba(40,10,80,0.45), transparent);
+      filter: blur(110px);
+      animation: auroraMove 14s infinite alternate ease-in-out;
+    }
+    @keyframes auroraMove{0%{transform:translateY(-60px) translateX(-50px) scale(1)}50%{transform:translateY(60px) translateX(40px) scale(1.08)}100%{transform:translateY(-20px) translateX(60px) scale(1)}}
+
+    /* Main card bigger */
+    .app{
+      width:95%; max-width:1120px; min-height:620px;
+      background: linear-gradient(180deg, rgba(24,10,38,0.82), rgba(18,8,32,0.88));
+      border-radius:var(--radius); padding:36px 44px;
+      box-shadow: var(--glow), 0 40px 80px rgba(10,5,20,0.7);
+      border: 1px solid rgba(198,87,255,0.12);
+      position:relative; z-index:1;
+      backdrop-filter: blur(18px) saturate(140%);
+      transition:transform .25s ease;
+    }
+    .app:hover{ transform: translateY(-6px); }
+
+    /* header */
+    header{ display:flex; gap:20px; align-items:center; margin-bottom:20px; }
+    .logo{ width:72px; height:72px; border-radius:18px; display:flex;align-items:center;justify-content:center;
+           background: linear-gradient(135deg,var(--accent-1),var(--accent-2)); color:white; font-weight:800; font-size:22px;
+           box-shadow: 0 12px 30px rgba(91,29,138,0.18); }
+    .title-col{ display:flex; flex-direction:column; gap:6px; }
+    h1{ margin:0; color:var(--pink); font-size:32px; letter-spacing:0.2px; }
+    p.lead{ margin:0; color:var(--muted); font-size:16px; }
+
+    /* user area / logout */
+    .user-area{ margin-left:auto; display:flex; gap:12px; align-items:center; }
+    #logout{ padding:10px 14px; border-radius:12px; border:1px solid rgba(255,183,223,0.18);
+             background:transparent;color:var(--pink); cursor:pointer; font-weight:600; }
+
+    /* controls (big inputs) */
+    .controls{ display:flex; gap:14px; align-items:center; margin-top:18px; }
+    .input-wrap{ flex:1; display:flex; gap:12px; align-items:center; }
+    input.new-task{ flex:1; padding:18px 20px; border-radius:14px; border:none; font-size:18px; outline:none;
+                    background: #fff; color:#111; box-shadow: 0 8px 24px rgba(0,0,0,0.35); min-width:360px; }
+    input[type="datetime-local"]{ padding:12px 14px; border-radius:12px; background:#fff; border:none; font-size:15px; }
+    select.new-task{ padding:12px 14px; border-radius:12px; font-size:15px; background:#fff; border:none; }
+
+    button.add{
+      padding:14px 20px; border-radius:14px; border:none; cursor:pointer; font-weight:700;
+      background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white; font-size:17px;
+      box-shadow: 0 12px 40px rgba(198,87,255,0.28);
+    }
+
+    /* list/card */
+    .list{ margin-top:26px; display:flex; flex-direction:column; gap:14px; max-height:380px; overflow:auto; padding-right:6px; }
+
+    .task{
+      display:flex; align-items:center; gap:16px; padding:16px 18px; border-radius:12px;
+      background: linear-gradient(180deg, rgba(20,10,35,0.42), rgba(18,7,34,0.48));
+      border: 1px solid rgba(140,80,200,0.09); transition:transform .12s ease, box-shadow .12s ease; min-height:74px;
+    }
+    .task:hover{ transform: translateY(-6px); box-shadow:0 18px 48px rgba(91,29,138,0.12); }
+
+    .checkbox{ width:22px; height:22px; border-radius:7px; display:grid; place-items:center; cursor:pointer;
+               border:2px solid rgba(123,60,255,0.18); background:transparent; color:white; font-weight:700; }
+    .checkbox.checked{ background:linear-gradient(90deg,var(--accent-1),var(--accent-2)); border:none; box-shadow:0 8px 36px rgba(198,87,255,0.22); }
+
+    .content{ flex:1; min-width:0; display:flex; flex-direction:column; gap:6px; }
+    .title{ font-size:20px; color:var(--pink); font-weight:700; }
+    .title.done{ color:#b97fb0; text-decoration:line-through; font-weight:600; opacity:0.9; }
+    .meta{ font-size:14px; color:var(--muted); }
+
+    .actions{ display:flex; gap:10px; align-items:center; }
+    /* pink icon buttons */
+    .btn-pink{
+      display:inline-grid; place-items:center; width:44px; height:44px; border-radius:12px; cursor:pointer;
+      border:none; font-size:18px; color:white; font-weight:700;
+      background: linear-gradient(90deg,var(--pink),#e69ad0);
+      box-shadow: 0 10px 28px rgba(198,87,255,0.24);
+    }
+    .btn-pink.small{ width:40px; height:36px; font-size:16px; padding:6px; border-radius:10px; }
+
+    /* footer area */
+    .footer{ display:flex; align-items:center; justify-content:space-between; margin-top:18px; color:var(--muted); font-size:16px; }
+    .filters{ display:flex; gap:12px; align-items:center; }
+    .chip{ padding:10px 14px; border-radius:999px; background:rgba(255,255,255,0.06); border:none; color:#eee; cursor:pointer; font-weight:600; }
+    .chip.active{ box-shadow: 0 10px 30px rgba(198,87,255,0.18); background: linear-gradient(90deg, rgba(198,87,255,0.08), rgba(91,29,138,0.08)); color:var(--pink) }
+
+    /* empty area */
+    .empty{ padding:36px; border-radius:12px; border:1px dashed rgba(123,60,255,0.05); color:var(--muted); text-align:center; font-size:18px; min-height:120px; display:flex; align-items:center; justify-content:center; }
+
+    /* modal overlay + glass card */
+    .modal-overlay{ position:fixed; inset:0; background:rgba(6,4,10,0.5); display:none; align-items:center; justify-content:center; z-index:40; }
+    .modal{ width:520px; max-width:92%; background: linear-gradient(180deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02));
+            border-radius:14px; padding:20px 22px; border:1px solid rgba(255,183,223,0.14);
+            box-shadow: 0 18px 60px rgba(91,29,138,0.25); backdrop-filter: blur(10px) saturate(140%); transform: scale(.96); opacity:0;
+            transition: transform .18s cubic-bezier(.2,.9,.3,1), opacity .18s ease; }
+    .modal.show{ transform: scale(1); opacity:1; }
+
+    .modal h3{ margin:0 0 12px 0; color:var(--pink); font-size:20px; }
+    .modal .row{ display:flex; gap:10px; margin-bottom:12px; align-items:center; }
+    .modal input, .modal select{ width:100%; padding:12px 14px; border-radius:10px; font-size:15px; border:none; background:rgba(255,255,255,0.06); color:#fff; }
+    .modal .actions{ display:flex; gap:10px; justify-content:flex-end; margin-top:6px; }
+    .modal .btn-ghost{ padding:10px 14px; border-radius:10px; background:transparent; border:1px solid rgba(255,255,255,0.06); color:var(--muted); cursor:pointer; }
+    .modal .btn-save{ padding:10px 14px; border-radius:10px; background: linear-gradient(90deg,var(--accent-1),var(--accent-2)); color:white; cursor:pointer; font-weight:700; }
+
+    /* responsive */
+    @media (max-width:720px){
+      .app{ padding:20px; width:96%; min-height:unset; }
+      .logo{ width:56px;height:56px }
+      h1{ font-size:24px }
+      .title{ font-size:18px }
+      .modal{ width:92%; padding:14px }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="aurora"></div>
+
+  <main class="app" aria-label="Pretty Tasks">
+    <header>
+      <div class="logo">To</div>
+      <div class="title-col">
+        <h1>Pretty Tasks</h1>
+        <p class="lead">Simple, pretty and playful — pink & purple theme</p>
+      </div>
+
+      <div class="user-area">
+        <button id="logout">Logout</button>
+      </div>
+    </header>
+
+    <section class="controls">
+      <div class="input-wrap">
+        <input id="taskInput" class="new-task" placeholder="Task name (e.g., Finish assignment)" />
+        <input id="taskDate" type="datetime-local" class="new-task" />
+        <select id="taskRepeat" class="new-task">
+          <option value="none">No Repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+        <button id="addBtn" class="add">Add</button>
+      </div>
+    </section>
+
+    <section id="list" class="list" aria-live="polite"></section>
+
+    <div id="empty" class="empty" hidden>No tasks yet — add one above ✨</div>
+
+    <div class="footer">
+      <div><span id="leftCount">0</span> items left</div>
+      <div class="filters">
+        <button class="chip active" data-filter="all">All</button>
+        <button class="chip" data-filter="active">Active</button>
+        <button class="chip" data-filter="completed">Completed</button>
+        <button id="clearBtn" class="chip">Clear completed</button>
+      </div>
+    </div>
+  </main>
+
+  <!-- modal -->
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+    <div id="modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="editTitle">
+      <h3 id="editTitle">Edit Task</h3>
+      <div class="row">
+        <input id="editText" placeholder="Task name" />
+      </div>
+      <div class="row">
+        <input id="editDate" type="datetime-local" />
+      </div>
+      <div class="row">
+        <select id="editRepeat">
+          <option value="none">No Repeat</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+        </select>
+      </div>
+      <div class="actions" style="display:flex;justify-content:flex-end;">
+        <button id="cancelEdit" class="btn-ghost">Cancel</button>
+        <button id="saveEdit" class="btn-save">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- sound -->
+  <audio id="alertSound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm.ogg" preload="auto"></audio>
+
+  <script>
+    // --- local login protection (unchanged) ---
+    if (localStorage.getItem("prettyLoggedIn") !== "1") {
+      window.location.href = "login.html";
+    }
+
+    // --- Elements ---
+    const taskInput = document.getElementById('taskInput');
+    const taskDate = document.getElementById('taskDate');
+    const taskRepeat = document.getElementById('taskRepeat');
+    const addBtn = document.getElementById('addBtn');
+    const listEl = document.getElementById('list');
+    const emptyEl = document.getElementById('empty');
+    const leftCount = document.getElementById('leftCount');
+    const clearBtn = document.getElementById('clearBtn');
+    const filterButtons = document.querySelectorAll('.chip[data-filter]');
+    const alertSound = document.getElementById('alertSound');
+    const logoutBtn = document.getElementById('logout');
+
+    // modal elems
+    const modalOverlay = document.getElementById('modalOverlay');
+    const modal = document.getElementById('modal');
+    const editText = document.getElementById('editText');
+    const editDate = document.getElementById('editDate');
+    const editRepeat = document.getElementById('editRepeat');
+    const saveEdit = document.getElementById('saveEdit');
+    const cancelEdit = document.getElementById('cancelEdit');
+
+    // state
+    let tasks = JSON.parse(localStorage.getItem('pretty_todos_v3') || '[]');
+    let filter = 'all';
+    let timers = {};
+    let editingTaskId = null;
+
+    function save() { localStorage.setItem('pretty_todos_v3', JSON.stringify(tasks)); }
+
+    function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2,6); }
+
+    // notifications permission
+    if (Notification && Notification.permission !== 'granted') {
+      Notification.requestPermission();
+    }
+
+    // schedule notification for a task (in-page only)
+    function scheduleNotification(task){
+      if (!task.datetime) return;
+      try {
+        const time = new Date(task.datetime).getTime();
+        const now = Date.now();
+        if (timers[task.id]) clearTimeout(timers[task.id]);
+        if (time <= now) return;
+        const timeout = time - now;
+        timers[task.id] = setTimeout(() => {
+          if (Notification && Notification.permission === 'granted') {
+            new Notification('Pretty Tasks — Reminder', { body: task.text });
+          }
+          try { alertSound.play().catch(()=>{}); } catch(e){}
+          // recurring
+          if (task.repeat === 'daily') {
+            const next = new Date(task.datetime); next.setDate(next.getDate() + 1); task.datetime = next.toISOString();
+          } else if (task.repeat === 'weekly') {
+            const next = new Date(task.datetime); next.setDate(next.getDate() + 7); task.datetime = next.toISOString();
+          } else {
+            return;
+          }
+          save();
+          scheduleNotification(task);
+        }, timeout);
+      } catch(e) { console.warn('schedule error', e); }
+    }
+
+    // render
+    function render(){
+      listEl.innerHTML = '';
+      const filtered = tasks.filter(t => filter === 'all' ? true : filter === 'active' ? !t.done : t.done);
+      emptyEl.hidden = filtered.length !== 0;
+
+      filtered.forEach(t => {
+        const item = document.createElement('div'); item.className = 'task';
+
+        const cb = document.createElement('button'); cb.className = 'checkbox' + (t.done ? ' checked' : '');
+        cb.innerHTML = t.done ? '✓' : '';
+        cb.onclick = () => { t.done = !t.done; save(); render(); };
+
+        const content = document.createElement('div'); content.className = 'content';
+        const title = document.createElement('div'); title.className = 'title' + (t.done ? ' done' : '');
+        title.textContent = t.text;
+        const meta = document.createElement('div'); meta.className = 'meta';
+        meta.textContent = t.datetime ? `${new Date(t.datetime).toLocaleString()} (${t.repeat})` : 'No schedule';
+
+        content.appendChild(title); content.appendChild(meta);
+
+        const actions = document.createElement('div'); actions.className = 'actions';
+
+        // edit button (pink)
+        const editBtn = document.createElement('button'); editBtn.className = 'btn-pink small';
+        editBtn.title = 'Edit';
+        editBtn.innerHTML = '✏️';
+        editBtn.onclick = () => openEditModal(t.id);
+
+        // delete button (pink)
+        const delBtn = document.createElement('button'); delBtn.className = 'btn-pink small';
+        delBtn.title = 'Delete';
+        delBtn.innerHTML = '🗑';
+        delBtn.onclick = () => {
+          if (!confirm('Delete this task?')) return;
+          tasks = tasks.filter(x => x.id !== t.id);
+          if (timers[t.id]) clearTimeout(timers[t.id]);
+          save(); render();
+        };
+
+        actions.appendChild(editBtn);
+        actions.appendChild(delBtn);
+
+        item.appendChild(cb);
+        item.appendChild(content);
+        item.appendChild(actions);
+
+        listEl.appendChild(item);
+      });
+
+      leftCount.textContent = tasks.filter(t => !t.done).length;
+    }
+
+    // add task
+    function addTask(text, datetime, repeat){
+      const trimmed = (text||'').trim(); if (!trimmed) return;
+      const newTask = { id: uid(), text: trimmed, datetime: datetime || null, repeat: repeat || 'none', done:false };
+      tasks.unshift(newTask);
+      save();
+      scheduleNotification(newTask);
+      render();
+    }
+
+    addBtn.onclick = () => {
+      addTask(taskInput.value, taskDate.value, taskRepeat.value);
+      taskInput.value = ''; taskDate.value = ''; taskRepeat.value = 'none';
+    };
+
+    taskInput.addEventListener('keydown', e => { if (e.key === 'Enter') { addTask(taskInput.value, taskDate.value, taskRepeat.value); taskInput.value=''; taskDate.value=''; taskRepeat.value='none'; } });
+
+    clearBtn.onclick = () => { tasks = tasks.filter(t => !t.done); save(); render(); };
+
+    filterButtons.forEach(btn => btn.addEventListener('click', () => {
+      filterButtons.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      filter = btn.dataset.filter;
+      render();
+    }));
+
+    // LOGOUT
+    logoutBtn.onclick = () => { localStorage.removeItem('prettyLoggedIn'); window.location.href = 'login.html'; };
+
+    // EDIT modal functions
+    function openEditModal(taskId){
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+      editingTaskId = taskId;
+      editText.value = task.text;
+      editDate.value = task.datetime ? (new Date(task.datetime)).toISOString().slice(0,16) : '';
+      editRepeat.value = task.repeat || 'none';
+      modalOverlay.style.display = 'flex';
+      // small timeout to allow overlay display before adding show class (for zoom effect)
+      requestAnimationFrame(()=> modal.classList.add('show'));
+      modalOverlay.setAttribute('aria-hidden','false');
+    }
+
+    function closeModal(){
+      modal.classList.remove('show');
+      modalOverlay.setAttribute('aria-hidden','true');
+      setTimeout(()=> { modalOverlay.style.display = 'none'; }, 180);
+      editingTaskId = null;
+    }
+
+    cancelEdit.onclick = () => closeModal();
+
+    saveEdit.onclick = () => {
+      const t = tasks.find(x => x.id === editingTaskId);
+      if (!t) return closeModal();
+      t.text = editText.value.trim() || t.text;
+      t.datetime = editDate.value ? new Date(editDate.value).toISOString() : null;
+      t.repeat = editRepeat.value || 'none';
+      save();
+      scheduleNotification(t);
+      render();
+      closeModal();
+    };
+
+    // close modal by clicking outside
+    modalOverlay.addEventListener('click', (e) => {
+      if (e.target === modalOverlay) closeModal();
+    });
+
+    // schedule existing tasks on load
+    tasks.forEach(scheduleNotification);
+    render();
+  </script>
+</body>
+</html>

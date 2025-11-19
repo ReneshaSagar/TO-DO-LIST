@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sign Up • Pretty Tasks</title>
+
+<style>
+:root{
+  --pink:#ffb7df;
+  --purple-dark:#0c0516;
+  --purple-1:#5b1d8a;
+  --purple-2:#c657ff;
+  --glass:rgba(30,10,50,0.55);
+  --radius:14px;
+  font-family:Inter,system-ui;
+}
+body{
+  margin:0;width:100vw;height:100vh;
+  background:#0c0516;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;
+}
+
+/* Aurora */
+.aurora{
+  position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(1200px 900px at 10% 80%, rgba(135,70,255,.55), transparent),
+    radial-gradient(1400px 1000px at 90% 20%, rgba(200,70,255,.55), transparent),
+    radial-gradient(1600px 1200px at 50% 50%, rgba(70,20,150,.55), transparent);
+  filter: blur(100px);
+  animation: auroraMove 12s infinite alternate ease-in-out;
+}
+@keyframes auroraMove{
+  0%{transform:translateY(-50px)}
+  50%{transform:translateY(50px)}
+  100%{transform:translateY(-20px)}
+}
+
+.container{
+  width:90%;max-width:420px;
+  background:var(--glass);
+  border:1px solid rgba(198,87,255,.25);
+  padding:32px;border-radius:var(--radius);
+  backdrop-filter:blur(18px);
+}
+
+h1{text-align:center;color:var(--pink);margin-bottom:22px}
+
+input{
+  width:100%;padding:12px;
+  margin-bottom:14px;border-radius:12px;
+  border:1px solid rgba(198,87,255,.25);
+  background:rgba(255,255,255,.06);
+  color:white;font-size:15px;
+}
+
+button{
+  width:100%;padding:12px;margin-top:5px;
+  border:none;border-radius:12px;
+  background:linear-gradient(90deg,var(--purple-2),var(--purple-1));
+  color:white;font-weight:600;font-size:16px;
+  cursor:pointer;
+}
+
+.links{
+  text-align:center;margin-top:16px;
+}
+.links a{
+  color:var(--pink);
+  text-decoration:none;
+  font-size:14px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="aurora"></div>
+
+<div class="container">
+  <h1>Create Account</h1>
+
+  <input id="email" type="email" placeholder="Email">
+  <input id="password" type="password" placeholder="Password (min 6 chars)">
+  <input id="name" type="text" placeholder="Full name (optional)">
+
+  <button id="signupBtn">Sign Up</button>
+
+  <div class="links">
+    <a href="login.html">Already have an account? Login</a>
+  </div>
+</div>
+
+<script>
+// LOCAL SIGNUP
+document.getElementById("signupBtn").onclick = function(){
+    const email = document.getElementById("email").value.trim();
+    const pass = document.getElementById("password").value.trim();
+    const name = document.getElementById("name").value.trim();
+
+    if(!email || !pass) return alert("Enter email & password");
+
+    const user = { email, pass, name };
+    localStorage.setItem("prettyUser", JSON.stringify(user));
+
+    alert("Account created!");
+    window.location.href = "login.html";
+};
+</script>
+
+</body>
+</html>
